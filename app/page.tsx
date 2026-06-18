@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Anton, Playfair_Display, Caveat } from "next/font/google";
 import { saveSession } from "@/lib/session";
+
+const deckFont = Playfair_Display({ subsets: ["latin"], weight: "900" });
+const ofFont = Caveat({ subsets: ["latin"], weight: "700" });
+const cardsFont = Anton({ subsets: ["latin"], weight: "400" });
 
 export default function Home() {
   const router = useRouter();
@@ -63,12 +68,26 @@ export default function Home() {
   return (
     <div className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-center text-2xl font-semibold tracking-tight text-zinc-100">
-          ♠ Deck of Cards ♠
-        </h1>
-        <p className="mb-8 text-center text-sm text-zinc-500">
-          For when you couldn't find one in your junk drawer.
-        </p>
+        <div className="mb-8 flex flex-col items-center">
+          <span className="-mb-1 self-end pr-1 text-sm italic font-light tracking-wide text-zinc-500">
+            i need a
+          </span>
+          <h1 className="flex items-center gap-3 text-3xl tracking-tight text-zinc-50 sm:text-4xl">
+            <span className="text-zinc-600">♠</span>
+            <span className="flex items-baseline gap-1.5">
+              <span className={deckFont.className}>DECK</span>
+              <span className={`${ofFont.className} text-xl italic text-zinc-500 sm:text-2xl`}>
+                of
+              </span>
+              <span className={cardsFont.className}>CARDS</span>
+            </span>
+            <span className="text-zinc-600">♠</span>
+          </h1>
+          <div className="mt-3 h-px w-40 bg-zinc-800" />
+          <p className="mt-3 text-center text-sm text-zinc-500">
+            For when you couldn't find one in your junk drawer.
+          </p>
+        </div>
 
         <div className="mb-6 flex rounded-md border border-zinc-800 p-1">
           <button
