@@ -64,10 +64,10 @@ export default function Home() {
     <div className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <h1 className="mb-1 text-center text-2xl font-semibold tracking-tight text-zinc-100">
-          ♠ Deck of Cards
+          ♠ Deck of Cards ♠
         </h1>
         <p className="mb-8 text-center text-sm text-zinc-500">
-          No accounts. Just a room code.
+          For when you couldn't find one in your junk drawer.
         </p>
 
         <div className="mb-6 flex rounded-md border border-zinc-800 p-1">
