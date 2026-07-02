@@ -10,6 +10,8 @@ import { Table } from "@/components/Table";
 import { Sideboard } from "@/components/Sideboard";
 import { ActionLog } from "@/components/ActionLog";
 import { DeckThemePicker, DeckThemeProvider } from "@/components/DeckTheme";
+import { MobileRoom } from "@/components/MobileRoom";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 export default function RoomPage() {
   return (
@@ -36,6 +38,7 @@ function Room() {
 
   const { state, error, actionError, clearActionError, loading, dispatch } =
     useRoomState(code, session ?? null);
+  const isMobile = useMediaQuery("(max-width: 767px)");
 
   useEffect(() => {
     if (!actionError) return;
@@ -139,6 +142,34 @@ function Room() {
   const players = Object.values(state.players);
   const canShuffle = state.deck.length === 52;
 
+  const toast = actionError && (
+    <div
+      className={`toast-in fixed left-1/2 z-[1100] -translate-x-1/2 rounded-lg border border-red-900/60 bg-red-950/90 px-4 py-2 text-sm text-red-200 shadow-lg shadow-black/40 backdrop-blur ${
+        isMobile ? "top-14" : "bottom-4"
+      }`}
+    >
+      {actionError}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <MobileRoom
+          code={code}
+          state={state}
+          meId={session.playerId}
+          isHost={isHost}
+          dispatch={dispatch}
+          onLeave={() => router.push("/")}
+          tableRef={tableRef}
+          deckRef={deckRef}
+        />
+        {toast}
+      </>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 p-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -237,11 +268,7 @@ function Room() {
         </div>
       </div>
 
-      {actionError && (
-        <div className="toast-in fixed bottom-4 left-1/2 z-[1100] -translate-x-1/2 rounded-lg border border-red-900/60 bg-red-950/90 px-4 py-2 text-sm text-red-200 shadow-lg shadow-black/40 backdrop-blur">
-          {actionError}
-        </div>
-      )}
+      {toast}
     </div>
   );
 }

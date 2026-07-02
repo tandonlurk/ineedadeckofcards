@@ -21,6 +21,8 @@ export type DeckTheme = {
   feltBorder: string;
   /** css background used by the theme picker chip */
   swatch: string;
+  /** highlight color for interactive accents (drag targets, toggles) */
+  accent: string;
   jokerGlyph: string;
   Back: React.ComponentType<{ className?: string }>;
 };
@@ -191,6 +193,7 @@ export const DECK_THEMES: Record<DeckThemeId, DeckTheme> = {
     },
     feltBorder: "#1e4030",
     swatch: "linear-gradient(135deg, #272b5e, #0b0d24)",
+    accent: "#8b90f5",
     jokerGlyph: "★",
     Back: MidnightBack,
   },
@@ -209,6 +212,7 @@ export const DECK_THEMES: Record<DeckThemeId, DeckTheme> = {
     },
     feltBorder: "#5b4526",
     swatch: "linear-gradient(135deg, #e08a33, #6d4423)",
+    accent: "#e08a33",
     jokerGlyph: "☺",
     Back: RetroBack,
   },
@@ -227,6 +231,7 @@ export const DECK_THEMES: Record<DeckThemeId, DeckTheme> = {
     },
     feltBorder: "#164a45",
     swatch: "linear-gradient(135deg, #0d3a3b, #03100f)",
+    accent: "#35c3a4",
     jokerGlyph: "☠",
     Back: DavyBack,
   },
@@ -267,6 +272,110 @@ export function DeckThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useDeckTheme() {
   return useContext(DeckThemeContext);
+}
+
+/**
+ * Ambient full-bleed decoration layered over the felt on mobile: stars for
+ * Midnight, sun arcs for Retro, rising bubbles and light shafts for Davy
+ * Jones. Purely decorative — pointer-events pass through.
+ */
+export function ThemeBackdrop() {
+  const { themeId } = useDeckTheme();
+
+  if (themeId === "midnight") {
+    const stars = [
+      [8, 12], [22, 6], [37, 15], [55, 8], [70, 13], [86, 7], [93, 18],
+      [14, 26], [78, 28], [45, 4], [63, 22], [30, 30],
+    ];
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        {stars.map(([x, y], i) => (
+          <span
+            key={i}
+            className="star-twinkle absolute rounded-full bg-[#aeb2ff]"
+            style={{
+              left: `${x}%`,
+              top: `${y}%`,
+              width: i % 3 === 0 ? 3 : 2,
+              height: i % 3 === 0 ? 3 : 2,
+              animationDelay: `${(i * 0.7) % 4}s`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (themeId === "retro") {
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="absolute -top-10 -left-10 h-56 w-56 opacity-[0.14]"
+        >
+          {[46, 38, 30, 22, 14].map((r, i) => (
+            <circle
+              key={r}
+              cx="0"
+              cy="0"
+              r={r}
+              fill="none"
+              stroke={i % 2 ? "#e08a33" : "#d9a743"}
+              strokeWidth="7"
+            />
+          ))}
+        </svg>
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="absolute -right-10 -bottom-10 h-56 w-56 opacity-[0.12]"
+        >
+          {[46, 38, 30, 22, 14].map((r, i) => (
+            <circle
+              key={r}
+              cx="100"
+              cy="100"
+              r={r}
+              fill="none"
+              stroke={i % 2 ? "#b5561f" : "#e08a33"}
+              strokeWidth="7"
+            />
+          ))}
+        </svg>
+      </div>
+    );
+  }
+
+  // davy
+  const bubbles = [
+    [12, 9, 14], [28, 6, 19], [47, 11, 9], [66, 7, 16], [84, 10, 12], [93, 5, 21],
+  ];
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <div
+        className="absolute inset-x-0 top-0 h-2/5 opacity-25"
+        style={{
+          background:
+            "conic-gradient(from 195deg at 30% -10%, transparent 0deg, #2e9d8633 8deg, transparent 16deg, transparent 30deg, #2e9d8626 38deg, transparent 46deg)",
+        }}
+      />
+      {bubbles.map(([x, size, dur], i) => (
+        <span
+          key={i}
+          className="bubble-rise absolute rounded-full border border-[#7cf5d8]/30 bg-[#7cf5d8]/10"
+          style={{
+            left: `${x}%`,
+            bottom: -12,
+            width: size,
+            height: size,
+            animationDuration: `${dur}s`,
+            animationDelay: `${(i * 2.3) % 7}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export function DeckThemePicker() {
