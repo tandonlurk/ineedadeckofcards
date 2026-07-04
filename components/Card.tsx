@@ -4,9 +4,9 @@ import { SUIT_GLYPHS, type Card as CardType } from "@/lib/deck";
 import { useDeckTheme } from "./DeckTheme";
 
 const SIZES = {
-  sm: "w-10 h-14 text-[7px] rounded-md",
-  md: "w-14 h-20 text-[10px] rounded-lg",
-  lg: "w-20 h-28 text-sm rounded-xl",
+  sm: "w-12 h-[4.2rem] text-[8px] rounded-md",
+  md: "w-[4.25rem] h-24 text-xs rounded-lg",
+  lg: "w-24 h-[8.5rem] text-base rounded-xl",
 };
 
 /**

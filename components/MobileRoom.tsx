@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { PlayingCard } from "./Card";
 import { ActionLog } from "./ActionLog";
 import { Sideboard } from "./Sideboard";
+import type { DealMode } from "./Deck";
 import { DeckThemePicker, ThemeBackdrop, useDeckTheme } from "./DeckTheme";
 import { Seat, SEAT_COLORS, seatPosition } from "./Seat";
 import { TableCardView } from "./TableCard";
@@ -50,8 +51,10 @@ export function MobileRoom({
 
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [faceUp, setFaceUp] = useState(false);
+  const [deckOpen, setDeckOpen] = useState(false);
+  const [mode, setMode] = useState<DealMode>("down");
   const [flights, setFlights] = useState<Flight[]>([]);
+  const faceUp = mode === "up";
 
   // Diff table card ids for the toss entrance, as on desktop.
   const [prev, setPrev] = useState<{
@@ -150,9 +153,10 @@ export function MobileRoom({
     onDrop: (x, y) => {
       setTargetSeatId(null);
       if (deckCount === 0) return;
+      const blind = mode === "blind";
       const seat = seatHit(x, y);
       if (seat) {
-        dispatch("deal", { targetPlayerId: seat.id, count: 1, faceUp });
+        dispatch("deal", { targetPlayerId: seat.id, count: 1, faceUp, blind });
         const px = seatPixel(seat);
         if (px) launchFlight(px.x, px.y);
         return;
@@ -165,7 +169,7 @@ export function MobileRoom({
       // Dropped below the felt, onto the dock: deal to your own hand.
       const rect = tableRef.current?.getBoundingClientRect();
       if (rect && y > rect.bottom) {
-        dispatch("deal", { targetPlayerId: meId, count: 1, faceUp });
+        dispatch("deal", { targetPlayerId: meId, count: 1, faceUp, blind });
       }
     },
   });
@@ -226,7 +230,11 @@ export function MobileRoom({
                 <span className="font-mono font-semibold text-white/50">{code}</span>
               </span>
             ) : isHost ? (
-              "Tap the deck to toss a card, or drag it onto a player"
+              deckOpen ? (
+                "Tap the deck to toss a card, or drag it onto a player"
+              ) : (
+                "Tap the deck circle below to shuffle and deal"
+              )
             ) : (
               "The felt is empty — waiting on the dealer"
             )}
@@ -276,73 +284,114 @@ export function MobileRoom({
         )}
 
         {isHost ? (
-          <div className="flex w-full items-end justify-center gap-4">
-            <button
-              type="button"
-              disabled={!canShuffle}
-              onClick={() => dispatch("shuffle")}
-              className="mb-1 rounded-full bg-black/40 px-3 py-1.5 text-xs font-medium text-zinc-200 backdrop-blur-sm disabled:text-zinc-600"
-            >
-              ⟳ Shuffle
-            </button>
-            <div className="flex flex-col items-center gap-1">
-              <p className="text-[10px] text-white/35">
-                tap to toss · drag to deal
-              </p>
-              <div
-                ref={deckRef}
-                onPointerDown={deckDrag.onPointerDown}
-                className={`relative h-[4.5rem] w-[3.15rem] touch-none ${
-                  deckDrag.dragging ? "opacity-40" : ""
-                }`}
-              >
-                {deckCount === 0 ? (
-                  <div className="flex h-full w-full items-center justify-center rounded-lg border border-dashed border-white/25 text-[9px] text-white/40">
-                    empty
-                  </div>
-                ) : (
-                  <>
-                    {deckCount > 20 && (
-                      <div className="absolute inset-0 -translate-x-1 translate-y-0.5 rotate-[-4deg] overflow-hidden rounded-lg shadow-md shadow-black/50">
-                        <theme.Back />
-                      </div>
-                    )}
-                    {deckCount > 5 && (
-                      <div className="absolute inset-0 -translate-x-0.5 rotate-[-2deg] overflow-hidden rounded-lg shadow-md shadow-black/50">
-                        <theme.Back />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 overflow-hidden rounded-lg shadow-lg shadow-black/60">
-                      <theme.Back />
+          deckOpen ? (
+            <div className="seat-pop flex w-full items-center justify-center gap-3">
+              <div className="flex flex-col items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={!canShuffle}
+                  onClick={() => dispatch("shuffle")}
+                  title="Shuffle the deck"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-base text-zinc-200 backdrop-blur-sm disabled:text-zinc-600"
+                >
+                  ⟳
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeckOpen(false)}
+                  title="Collapse the deck"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-sm text-zinc-400 backdrop-blur-sm"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-[10px] text-white/35">
+                  {mode === "blind"
+                    ? "drag onto a player — they won't see it"
+                    : "tap to toss · drag to deal"}
+                </p>
+                <div
+                  ref={deckRef}
+                  onPointerDown={deckDrag.onPointerDown}
+                  className={`relative h-24 w-[4.25rem] touch-none ${
+                    deckDrag.dragging ? "opacity-40" : ""
+                  }`}
+                >
+                  {deckCount === 0 ? (
+                    <div className="flex h-full w-full items-center justify-center rounded-lg border border-dashed border-white/25 text-[9px] text-white/40">
+                      empty
                     </div>
-                  </>
-                )}
-                <span className="absolute -right-2 -top-2 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-100 backdrop-blur-sm">
-                  {deckCount}
-                </span>
+                  ) : (
+                    <>
+                      {deckCount > 20 && (
+                        <div className="absolute inset-0 -translate-x-1 translate-y-0.5 rotate-[-4deg] overflow-hidden rounded-lg shadow-md shadow-black/50">
+                          <theme.Back />
+                        </div>
+                      )}
+                      {deckCount > 5 && (
+                        <div className="absolute inset-0 -translate-x-0.5 rotate-[-2deg] overflow-hidden rounded-lg shadow-md shadow-black/50">
+                          <theme.Back />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 overflow-hidden rounded-lg shadow-lg shadow-black/60">
+                        <theme.Back />
+                      </div>
+                    </>
+                  )}
+                  <span className="absolute -right-2 -top-2 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-100 backdrop-blur-sm">
+                    {deckCount}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col rounded-2xl bg-black/40 p-0.5 backdrop-blur-sm">
+                {(
+                  [
+                    ["down", "▼ down"],
+                    ["up", "▲ up"],
+                    ["blind", "◎ blind"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setMode(value)}
+                    title={
+                      value === "blind"
+                        ? "Everyone sees the card except the player holding it"
+                        : undefined
+                    }
+                    className={`rounded-xl px-2.5 py-1 text-[11px] font-medium ${
+                      mode === value ? "bg-zinc-100 text-black" : "text-zinc-400"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="mb-1 flex rounded-full bg-black/40 p-0.5 backdrop-blur-sm">
+          ) : (
+            <div className="flex w-full justify-end pr-1">
               <button
                 type="button"
-                onClick={() => setFaceUp(false)}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                  !faceUp ? "bg-zinc-100 text-black" : "text-zinc-400"
-                }`}
+                onClick={() => setDeckOpen(true)}
+                title="Open the deck"
+                className="relative h-14 w-14"
               >
-                ▼ down
-              </button>
-              <button
-                type="button"
-                onClick={() => setFaceUp(true)}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                  faceUp ? "bg-zinc-100 text-black" : "text-zinc-400"
-                }`}
-              >
-                ▲ up
+                <div
+                  ref={deckRef}
+                  className="h-full w-full overflow-hidden rounded-full border-2 border-white/25 shadow-lg shadow-black/60"
+                >
+                  <div className="h-full w-full scale-[1.8]">
+                    <theme.Back />
+                  </div>
+                </div>
+                <span className="absolute -right-1 -top-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-100 backdrop-blur-sm">
+                  {deckCount}
+                </span>
               </button>
             </div>
-          </div>
+          )
         ) : (
           me &&
           me.hand.length === 0 && (
@@ -358,8 +407,8 @@ export function MobileRoom({
         deckDrag.point &&
         createPortal(
           <div
-            className="pointer-events-none fixed z-[1000] h-20 w-14 -rotate-6 overflow-hidden rounded-lg shadow-xl shadow-black/60"
-            style={{ left: deckDrag.point.x - 28, top: deckDrag.point.y - 46 }}
+            className="pointer-events-none fixed z-[1000] h-24 w-[4.25rem] -rotate-6 overflow-hidden rounded-lg shadow-xl shadow-black/60"
+            style={{ left: deckDrag.point.x - 34, top: deckDrag.point.y - 52 }}
           >
             <theme.Back />
           </div>,
@@ -464,11 +513,11 @@ function FlightCard({
 
   return createPortal(
     <div
-      className="card-fly pointer-events-none fixed z-[1000] h-20 w-14 overflow-hidden rounded-lg shadow-xl shadow-black/60"
+      className="card-fly pointer-events-none fixed z-[1000] h-24 w-[4.25rem] overflow-hidden rounded-lg shadow-xl shadow-black/60"
       style={
         {
-          left: flight.fromX - 28,
-          top: flight.fromY - 40,
+          left: flight.fromX - 34,
+          top: flight.fromY - 48,
           "--fly-x": `${flight.toX - flight.fromX}px`,
           "--fly-y": `${flight.toY - flight.fromY}px`,
           "--fly-r": `${flight.rot.toFixed(1)}deg`,
@@ -603,7 +652,7 @@ function FanHand({
           ⟲ Return
         </button>
       </div>
-      <div className="relative h-[6.5rem] w-full">
+      <div className="relative h-[7.5rem] w-full">
         {cards.map((card, i) => {
           const rot = n > 1 ? -spread / 2 + (spread / (n - 1)) * i : 0;
           const isNew = newIds.has(card.id);
@@ -694,12 +743,20 @@ function FanCard({
           className={entrance ? "hand-in" : ""}
           style={entrance ? { animationDelay: `${entrance.delay}ms` } : undefined}
         >
-          <div onPointerDown={drag.onPointerDown} className="touch-none">
+          <div onPointerDown={drag.onPointerDown} className="relative touch-none">
             <PlayingCard
-              card={{ ...card, faceUp: revealed }}
+              card={{ ...card, faceUp: !card.blind && revealed }}
               size="md"
               className={drag.dragging ? "opacity-30" : ""}
             />
+            {card.blind && (
+              <span
+                title="Dealt blind — everyone can see this card except you"
+                className="absolute -right-1.5 -top-1.5 rounded-full border border-zinc-600 bg-zinc-950 px-1.5 py-0.5 text-[10px] font-bold text-zinc-200"
+              >
+                ?
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -708,9 +765,12 @@ function FanCard({
         createPortal(
           <div
             className="pointer-events-none fixed z-[1000]"
-            style={{ left: drag.point.x - 28, top: drag.point.y - 46 }}
+            style={{ left: drag.point.x - 34, top: drag.point.y - 52 }}
           >
-            <PlayingCard card={{ ...card, faceUp: faceUpPref }} size="md" />
+            <PlayingCard
+              card={{ ...card, faceUp: !card.blind && faceUpPref }}
+              size="md"
+            />
           </div>,
           document.body
         )}

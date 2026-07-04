@@ -218,8 +218,8 @@ function Room() {
             canShuffle={canShuffle}
             deckRef={deckRef}
             onShuffle={() => dispatch("shuffle")}
-            onDeal={(targetPlayerId, count, faceUp) =>
-              dispatch("deal", { targetPlayerId, count, faceUp })
+            onDeal={(targetPlayerId, count, faceUp, blind) =>
+              dispatch("deal", { targetPlayerId, count, faceUp, blind })
             }
             onDealToTable={(count, faceUp) =>
               dispatch("dealToTable", {

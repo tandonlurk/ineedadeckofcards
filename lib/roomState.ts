@@ -70,7 +70,12 @@ export type ActionType =
   | {
       type: "deal";
       playerId: string;
-      payload: { targetPlayerId: string; count: number; faceUp: boolean };
+      payload: {
+        targetPlayerId: string;
+        count: number;
+        faceUp: boolean;
+        blind?: boolean;
+      };
     }
   | {
       type: "dealToTable";
@@ -121,7 +126,7 @@ export function applyAction(
 
     case "deal": {
       if (!isHost) throw new ActionError("Only the host can deal");
-      const { targetPlayerId, count, faceUp } = action.payload;
+      const { targetPlayerId, count, faceUp, blind } = action.payload;
       const target = state.players[targetPlayerId];
       if (!target) throw new ActionError("Unknown target player");
       if (count < 1 || count > state.deck.length) {
@@ -130,13 +135,14 @@ export function applyAction(
       for (let i = 0; i < count; i++) {
         const card = state.deck.shift();
         if (!card) break;
-        card.faceUp = faceUp;
+        card.faceUp = blind ? false : faceUp;
+        card.blind = blind ? true : undefined;
         target.hand.push(card);
       }
       log(
         state,
         `${player.name} dealt ${count} card${count > 1 ? "s" : ""} ${
-          faceUp ? "face up" : "face down"
+          blind ? "blind" : faceUp ? "face up" : "face down"
         } to ${target.name}`
       );
       return state;
@@ -174,6 +180,7 @@ export function applyAction(
       if (idx === -1) throw new ActionError("Card not in your hand");
       const [card] = player.hand.splice(idx, 1);
       card.faceUp = faceUp;
+      card.blind = undefined;
       state.table.push({ ...card, x, y, z: state.nextZ++ });
       log(state, `${player.name} played a card to the table`);
       return state;
@@ -203,6 +210,7 @@ export function applyAction(
       if (handIdx !== -1) {
         const [card] = player.hand.splice(handIdx, 1);
         card.faceUp = false;
+        card.blind = undefined;
         state.deck.unshift(card);
         log(state, `${player.name} returned a card to the deck`);
         return state;
@@ -223,6 +231,7 @@ export function applyAction(
       for (const p of Object.values(state.players)) {
         for (const card of p.hand) {
           card.faceUp = false;
+          card.blind = undefined;
           state.deck.unshift(card);
         }
         p.hand = [];

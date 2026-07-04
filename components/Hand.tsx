@@ -87,19 +87,30 @@ function HandCard({
     onPlayToTable(card.id, faceUp, x, y);
   });
 
+  // Blind cards stay hidden from their own holder until played.
+  const showFace = !card.blind && revealed;
+
   return (
     <div
       className={`flex flex-col items-center gap-1.5 ${entrance ? "hand-in" : ""}`}
       style={entrance ? { animationDelay: `${entrance.delay}ms` } : undefined}
     >
-      <div onPointerDown={onPointerDown} className="touch-none">
+      <div onPointerDown={onPointerDown} className="relative touch-none">
         <PlayingCard
-          card={{ ...card, faceUp: revealed }}
+          card={{ ...card, faceUp: showFace }}
           size="md"
           className={`cursor-grab transition-transform hover:-translate-y-1 active:cursor-grabbing ${
             dragging ? "opacity-30" : ""
           }`}
         />
+        {card.blind && (
+          <span
+            title="Dealt blind — everyone can see this card except you"
+            className="absolute -right-1.5 -top-1.5 rounded-full border border-zinc-600 bg-zinc-950 px-1.5 py-0.5 text-[10px] font-bold text-zinc-200"
+          >
+            ?
+          </span>
+        )}
       </div>
       <div className="flex gap-1">
         <button
@@ -124,9 +135,12 @@ function HandCard({
         createPortal(
           <div
             className="pointer-events-none fixed z-[1000]"
-            style={{ left: point.clientX - 28, top: point.clientY - 40 }}
+            style={{ left: point.clientX - 34, top: point.clientY - 48 }}
           >
-            <PlayingCard card={{ ...card, faceUp }} size="md" />
+            <PlayingCard
+              card={{ ...card, faceUp: !card.blind && faceUp }}
+              size="md"
+            />
           </div>,
           document.body
         )}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useDeckTheme } from "./DeckTheme";
+import { seatCardFaceUp, SUIT_GLYPHS, type Card } from "@/lib/deck";
 import type { Player } from "@/lib/roomState";
 
 export const SEAT_COLORS = [
@@ -12,6 +14,8 @@ export const SEAT_COLORS = [
   "#63d6d0",
   "#e0e08a",
 ];
+
+const MAX_MINI_CARDS = 8;
 
 /**
  * Seats sit on an ellipse just inside the table edge: you at the bottom
@@ -76,7 +80,7 @@ export function Seat({
         >
           {initials || "?"}
         </div>
-        <div className="flex max-w-28 items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 backdrop-blur-sm">
+        <div className="flex max-w-32 items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 backdrop-blur-sm">
           {player.isHost && (
             <span className="text-[10px]" title="Host" style={{ color }}>
               ♛
@@ -88,13 +92,90 @@ export function Seat({
           {/* keyed on count so every change re-triggers the bump animation */}
           <span
             key={player.hand.length}
-            className="count-bump flex shrink-0 items-center gap-0.5 text-[10px] tabular-nums text-zinc-300"
+            className="count-bump shrink-0 text-[10px] tabular-nums text-zinc-400"
           >
-            <span className="inline-block h-2.5 w-2 rounded-[2px] border border-zinc-400/60 bg-zinc-600/60" />
-            {player.hand.length}
+            ({player.hand.length})
           </span>
         </div>
+        {player.hand.length > 0 && (
+          <MiniHand cards={player.hand} viewerIsOwner={isMe} />
+        )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The public view of a player's held cards: face-up deals show their front
+ * to the whole table, blind deals show their front to everyone except the
+ * holder, everything else shows a back.
+ */
+function MiniHand({
+  cards,
+  viewerIsOwner,
+}: {
+  cards: Card[];
+  viewerIsOwner: boolean;
+}) {
+  const shown = cards.slice(0, MAX_MINI_CARDS);
+  const extra = cards.length - shown.length;
+
+  return (
+    <div className="flex items-center">
+      {shown.map((card, i) => (
+        <MiniCard
+          key={card.id}
+          card={card}
+          faceUp={seatCardFaceUp(card, viewerIsOwner)}
+          overlap={i > 0}
+        />
+      ))}
+      {extra > 0 && (
+        <span className="ml-0.5 rounded-full bg-black/50 px-1 text-[9px] tabular-nums text-zinc-300 backdrop-blur-sm">
+          +{extra}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function MiniCard({
+  card,
+  faceUp,
+  overlap,
+}: {
+  card: Card;
+  faceUp: boolean;
+  overlap: boolean;
+}) {
+  const { theme } = useDeckTheme();
+
+  if (!faceUp) {
+    return (
+      <div
+        className={`h-[2.1rem] w-6 overflow-hidden rounded-[3px] shadow-sm shadow-black/50 ${
+          overlap ? "-ml-2" : ""
+        }`}
+      >
+        <theme.Back />
+      </div>
+    );
+  }
+
+  const isRed = card.suit === "hearts" || card.suit === "diamonds";
+  const color = isRed ? theme.red : theme.ink;
+  return (
+    <div
+      className={`flex h-[2.1rem] w-6 flex-col items-center justify-center rounded-[3px] leading-none shadow-sm shadow-black/50 ${
+        theme.face
+      } ${color} ${overlap ? "-ml-2" : ""}`}
+    >
+      <span className="text-[9px] font-bold">
+        {card.rank === "JOKER" ? theme.jokerGlyph : card.rank}
+      </span>
+      {card.rank !== "JOKER" && (
+        <span className="text-[8px]">{SUIT_GLYPHS[card.suit]}</span>
+      )}
     </div>
   );
 }
