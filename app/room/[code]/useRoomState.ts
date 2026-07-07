@@ -10,6 +10,7 @@ type RoomRow = { state: RoomState };
 export function useRoomState(code: string, session: RoomSession | null) {
   const [state, setState] = useState<RoomState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export function useRoomState(code: string, session: RoomSession | null) {
   const dispatch = useCallback(
     async (type: string, payload?: Record<string, unknown>) => {
       if (!session) return;
-      setError(null);
+      setActionError(null);
       const res = await fetch(`/api/rooms/${code}/action`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,11 +70,13 @@ export function useRoomState(code: string, session: RoomSession | null) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Action failed");
+        setActionError(data.error ?? "Action failed");
       }
     },
     [code, session]
   );
 
-  return { state, error, loading, dispatch };
+  const clearActionError = useCallback(() => setActionError(null), []);
+
+  return { state, error, actionError, clearActionError, loading, dispatch };
 }

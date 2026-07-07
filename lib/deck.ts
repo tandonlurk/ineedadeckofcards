@@ -19,7 +19,18 @@ export type Card = {
   rank: Rank | "JOKER";
   suit: Suit | "joker";
   faceUp: boolean;
+  /** Dealt blind: revealed to everyone EXCEPT the player holding it. */
+  blind?: boolean;
 };
+
+/**
+ * Which side of a held card a viewer sees on another player's seat:
+ * blind cards show their face to everyone but the holder; otherwise the
+ * card's dealt orientation decides.
+ */
+export function seatCardFaceUp(card: Card, viewerIsOwner: boolean): boolean {
+  return card.blind ? !viewerIsOwner : card.faceUp;
+}
 
 const SUITS: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
 const RANKS: Rank[] = [

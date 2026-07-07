@@ -85,7 +85,7 @@ export default function Home() {
           </h1>
           <div className="mt-3 h-px w-40 bg-zinc-800" />
           <p className="mt-3 text-center text-sm text-zinc-500">
-            For when you couldn't find one in your junk drawer.
+            For when you couldn&apos;t find one in your junk drawer.
           </p>
         </div>
 
